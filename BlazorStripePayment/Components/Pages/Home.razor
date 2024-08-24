@@ -1,7 +1,99 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Antiforgery
+@using Stripe.Checkout
+@inject NavigationManager NavigationManager
+@attribute [RequireAntiforgeryToken]
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Blazor Stripe Payments SSR</PageTitle>
 
 <h1>Hello, world!</h1>
 
-Welcome to your new app.
+Welcome to your new app. HI again?
+<table class="table">
+    <thead>
+        <tr>
+            <th>id</th>
+            <th>Product</th>
+            <th>Price</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(Product prod in _productsInCart)
+        {
+            <tr>
+                <td>@prod.Id</td>
+                <td>@prod.Name</td>
+                <td>@prod.Price.ToString("C")</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<label> Total Amount @_productsInCart.Sum(p => p.Price).ToString("C") </label>
+<hr />
+<form method="post" @formname="checkout-form" @onsubmit="CheckOutAsync">
+    <button type="submit" class="btn btn-sm btn-primary"> Pay Now</button>
+</form>
+
+
+@code {
+    private Product[] _productsInCart = [];
+
+    protected override void OnInitialized()
+    {
+        _productsInCart = [
+            new Product (1,"Prod 1", 15),
+    new Product (1,"Prod 2", 27.5m),
+    new Product (1,"Prod 3", 11.23m),
+    new Product (1,"Prod 4", 10.8m),
+    ];
+    }
+
+    private async Task CheckOutAsync()
+    {
+        // SEE https://docs.stripe.com/checkout/quickstart html and dotnet
+        //var domain = "http://localhost:4242";
+        var domain = NavigationManager.BaseUri; // https://localhost:7212/
+
+        var lineItems = _productsInCart.Select(p => new SessionLineItemOptions
+            {
+                Quantity = 1,                
+                PriceData = new SessionLineItemPriceDataOptions
+                {
+                    Currency="cad",
+                    UnitAmountDecimal =  p.Price,
+                    ProductData = new SessionLineItemPriceDataProductDataOptions
+                    {
+                        Name = p.Name
+                    }
+                }
+            })
+            .ToList();
+
+        var options = new SessionCreateOptions
+            {
+                LineItems = lineItems,
+                Mode = "payment",
+                //Redirection URLs
+                SuccessUrl = domain + "/payment-success", // Navigates to paymenSuccess.razor
+                CancelUrl = domain, // + "/cancel.html",
+            };
+        var service = new SessionService();
+        Session session = await service.CreateAsync(options);
+
+        NavigationManager.NavigateTo(session.Url);
+
+        // Response.Headers.Add("Location", session.Url);
+        // return new StatusCodeResult(303);
+        
+    }
+
+    class Product
+    {
+        public Product(int id, string name, decimal price) => (Id, Name, Price) = (id, name, price);
+
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+
+    }
+}
