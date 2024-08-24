@@ -2,7 +2,6 @@
 @using Microsoft.AspNetCore.Antiforgery
 @using Stripe.Checkout
 @inject NavigationManager NavigationManager
-@attribute [RequireAntiforgeryToken]
 
 <PageTitle>Blazor Stripe Payments SSR</PageTitle>
 
@@ -31,6 +30,7 @@ Welcome to your new app. HI again?
 <label> Total Amount @_productsInCart.Sum(p => p.Price).ToString("C") </label>
 <hr />
 <form method="post" @formname="checkout-form" @onsubmit="CheckOutAsync">
+    <AntiforgeryToken />
     <button type="submit" class="btn btn-sm btn-primary"> Pay Now</button>
 </form>
 
@@ -60,7 +60,7 @@ Welcome to your new app. HI again?
                 PriceData = new SessionLineItemPriceDataOptions
                 {
                     Currency="cad",
-                    UnitAmountDecimal =  p.Price,
+                    UnitAmountDecimal =  p.Price*100, // in cents
                     ProductData = new SessionLineItemPriceDataProductDataOptions
                     {
                         Name = p.Name
@@ -74,7 +74,7 @@ Welcome to your new app. HI again?
                 LineItems = lineItems,
                 Mode = "payment",
                 //Redirection URLs
-                SuccessUrl = domain + "/payment-success", // Navigates to paymenSuccess.razor
+                SuccessUrl = domain + "payment-success", // Navigates to paymenSuccess.razor
                 CancelUrl = domain, // + "/cancel.html",
             };
         var service = new SessionService();
