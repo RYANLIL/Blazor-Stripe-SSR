@@ -74,7 +74,7 @@ Welcome to your new app. HI again?
                 LineItems = lineItems,
                 Mode = "payment",
                 //Redirection URLs
-                SuccessUrl = domain + "payment-success", // Navigates to paymenSuccess.razor
+                SuccessUrl = domain + "payment-success?session-id={CHECKOUT_SESSION_ID}", // Navigates to paymenSuccess.razor
                 CancelUrl = domain, // + "/cancel.html",
             };
         var service = new SessionService();
